@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuong Nguyen - Interactive Career Timeline & Resume</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            darkbg: '#090d16',
+            panelbg: '#111827',
+            cardbg: '#1f2937',
+            accent: {
+              metlife: '#a855f7',
+              quinnox: '#0284c7',
+              consulting: '#059669',
+              jnj: '#d97706',
+              motoBi: '#dc2626',
+              motoEbiz: '#7c3aed',
+              motoUniv: '#0891b2',
+              vanstar: '#64748b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'Monaco', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <!-- D3.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4b5563;
+    }
+    .tick text {
+      fill: #9ca3af;
+      font-size: 10px;
+      font-family: monospace;
+    }
+    .domain {
+      stroke: #374151;
+    }
+    .selection {
+      fill: #38bdf8;
+      fill-opacity: 0.15;
+      stroke: #38bdf8;
+      stroke-width: 1.5px;
+    }
+    .handle {
+      fill: #38bdf8;
+      rx: 2px;
+    }
+  </style>
+</head>
+<body class="bg-darkbg text-slate-100 font-sans h-full flex flex-col overflow-hidden select-none">
+
+  <!-- TOP HEADER & RESUME SUMMARY BAR -->
+  <header class="bg-panelbg border-b border-slate-800 px-4 sm:px-8 py-4 shrink-0 z-20 shadow-xl">
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      
+      <!-- Identity & Contact -->
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-xl font-black text-white shadow-lg shadow-cyan-500/20 shrink-0">
+          TN
+        </div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h1 class="text-xl font-bold text-white tracking-tight">Tuong Nguyen</h1>
+            <a href="mailto:tuongn@gmail.com" class="text-xs font-mono text-cyan-400 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/80 px-2.5 py-1 rounded-full flex items-center gap-1.5 transition">
+              <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+              tuongn@gmail.com
+            </a>
+          </div>
+          <p class="text-xs text-slate-400 font-medium mt-0.5">Systems & Data Integration Specialist | Change Management & Enterprise Architecture</p>
+        </div>
+      </div>
+
+      <!-- Quick Executive Summary Highlights -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+        <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <i data-lucide="briefcase" class="w-4 h-4 text-emerald-400"></i>
+          <div>
+            <span class="text-slate-400 block text-[10px] leading-none">Project Scope</span>
+            <span class="font-bold text-slate-200">$1M - $30M Projects</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i>
+          <div>
+            <span class="text-slate-400 block text-[10px] leading-none">Scale Impact</span>
+            <span class="font-bold text-slate-200">$30B Enterprise Scale</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+          <div>
+            <span class="text-slate-400 block text-[10px] leading-none">Education & Certs</span>
+            <span class="font-bold text-slate-200">UT Austin B.A. | webMethods Cert</span>
+          </div>
+        </div>
+
+        <button id="toggleSummaryModal" class="bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-3 py-2 rounded-lg transition text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/20">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+          Full Bio & Credentials
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="flex-1 flex flex-col overflow-hidden relative">
+
+    <!-- CONDENSED D3 SCRUBBER TIMELINE PANEL -->
+    <div class="bg-slate-900/90 border-b border-slate-800 p-4 shrink-0 shadow-inner">
+      <div class="max-w-7xl mx-auto space-y-3">
+
+        <!-- Controls, Active Range Label & Quick Presets -->
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+          
+          <div class="flex items-center gap-3">
+            <span class="font-semibold text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-400"></i>
+              Interactive Timeline Scrubber:
+            </span>
+            <span id="activeRangeLabel" class="font-mono text-cyan-300 font-semibold bg-slate-950 border border-cyan-800/80 px-2.5 py-1 rounded">
+              1995 – 2026
+            </span>
+          </div>
+
+          <!-- Quick Era Preset Jump Buttons -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-slate-400 text-[11px] mr-1 hidden sm:inline">Jump to Era:</span>
+            <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition text-[11px]" data-start="1995" data-end="2026">All (1995-Present)</button>
+            <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-900/50 rounded transition text-[11px]" data-start="2022" data-end="2026">MetLife Era</button>
+            <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-900/50 rounded transition text-[11px]" data-start="2009" data-end="2021">Consulting (2009-2021)</button>
+            <button class="preset-btn px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-900/50 rounded transition text-[11px]" data-start="1995" data-end="2005">Motorola Era</button>
+          </div>
+
+        </div>
+
+        <!-- D3 SVG Scrubber Canvas -->
+        <div id="scrubberContainer" class="w-full h-20 relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner cursor-crosshair">
+          <svg id="scrubberSvg" class="w-full h-full block"></svg>
+        </div>
+
+        <!-- Legend & Counter -->
+        <div class="flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+          <div class="flex items-center gap-3 overflow-x-auto py-0.5">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span> MetLife</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span> Quinnox/Littelfuse</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Independent Consultant</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> J&J / NY-NJ Architect</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span> Motorola Enterprise</span>
+          </div>
+          <div class="font-mono text-slate-400">
+            Showing <strong id="activeRoleCount" class="text-cyan-400 font-bold">0</strong> of <span id="totalRoleCount">0</span> career chapters
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FILTER BAR & SEARCH -->
+    <div class="bg-slate-950 border-b border-slate-800/80 px-4 sm:px-8 py-3 shrink-0">
+      <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        
+        <!-- Category Filter Toggles -->
+        <div id="categoryToggles" class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          <!-- Dynamic Category Buttons -->
+        </div>
+
+        <!-- Search Box -->
+        <div class="relative min-w-[240px] md:w-72">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input id="searchInput" type="text" placeholder="Search (e.g. Cast Iron, webMethods, J&J, SFDC)..." class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-cyan-500 w-full transition placeholder:text-slate-500">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DYNAMIC FOCUSED ROLES SECTION -->
+    <div class="flex-1 bg-slate-950 overflow-y-auto p-4 sm:p-8">
+      <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header status -->
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+            Active Experience in Selected Timeline Window
+          </h2>
+          <span class="text-[11px] text-slate-500 font-mono">Drag slider above or click cards for full details</span>
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="focusedCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 space-y-3 bg-panelbg/50 border border-slate-800 rounded-2xl">
+          <i data-lucide="filter-x" class="w-10 h-10 mx-auto text-slate-600"></i>
+          <p class="text-sm font-semibold text-slate-300">No roles match the selected timeline range or search filter.</p>
+          <p class="text-xs text-slate-500">Try widening your scrubber slider window or clearing search queries.</p>
+          <button id="clearFiltersBtn" class="text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-4 py-2 rounded-lg transition mt-2">
+            Reset All Filters
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ROLE DETAIL DRAWER MODAL -->
+  <div id="detailDrawer" class="fixed inset-y-0 right-0 w-full max-w-xl bg-panelbg border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 ease-in-out shadow-2xl flex flex-col">
+    <!-- Header -->
+    <div class="p-6 border-b border-slate-800 flex items-start justify-between bg-slate-900/80">
+      <div>
+        <span id="drawerCategory" class="inline-block text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 border mb-2" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+          Category
+        </span>
+        <h2 id="drawerTitle" class="text-lg font-bold text-white leading-tight">Role Title</h2>
+        <p id="drawerCompany" class="text-sm font-semibold text-cyan-400 mt-1">Company / Engagement Name</p>
+      </div>
+      <button id="closeDrawer" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Scrollable Drawer Body -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-300">
+      <!-- Info Grid -->
+      <div class="grid grid-cols-2 gap-3 bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 font-mono">
+        <div>
+          <span class="text-slate-500 text-[10px] block">TIMEFRAME</span>
+          <span id="drawerDates" class="text-slate-200 font-semibold">Dec 2022 - Present</span>
+        </div>
+        <div>
+          <span class="text-slate-500 text-[10px] block">LOCATION</span>
+          <span id="drawerLocation" class="text-slate-200 font-semibold">New York, NY / Remote</span>
+        </div>
+      </div>
+
+      <!-- Key Accomplishments -->
+      <div>
+        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+          Key Accomplishments & Impact
+        </h4>
+        <ul id="drawerAccomplishments" class="space-y-2.5 text-slate-300 leading-relaxed pl-1">
+          <!-- Dynamic bullets -->
+        </ul>
+      </div>
+
+      <!-- Clients (if consulting) -->
+      <div id="drawerClientsSection" class="hidden">
+        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <i data-lucide="building-2" class="w-4 h-4 text-amber-400"></i>
+          Key Clients & Engagements
+        </h4>
+        <div id="drawerClients" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Tech Stack -->
+      <div>
+        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+          Technologies & Platforms
+        </h4>
+        <div id="drawerTechStack" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="drawerOverlay" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 hidden transition-opacity"></div>
+
+  <!-- BIO & CREDENTIALS MODAL -->
+  <div id="summaryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-panelbg border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-cyan-600 flex items-center justify-center text-white font-bold">
+            TN
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Tuong Nguyen - Professional Credentials</h3>
+            <p class="text-xs text-slate-400">Executive Summary, Core Skills, Education & Honors</p>
+          </div>
+        </div>
+        <button id="closeSummaryModal" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-slate-300">
+        <div>
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Executive Summary</h4>
+          <p class="leading-relaxed bg-slate-900/70 p-4 rounded-xl border border-slate-800 text-slate-300">
+            A specialist in system and data integration, change management, software re-use, and process reengineering. Ability to analyze existing applications, data, and processes, and provide swift, cost-effective solutions with significant returns. Experience managing technical projects from $1M - $30M with a proven record for quality, on-time, and on-budget delivery. Experienced in implementations of ERP solutions, Global EAI solutions, CIM, data warehouses, and supply chain solutions for enterprise sizes up to $30 Billion.
+          </p>
+        </div>
+
+        <!-- Competencies -->
+        <div>
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Key Competencies & Skill Matrix</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-slate-200 block mb-1">Integration Platforms & Architecture</span>
+              <p class="text-slate-400 leading-normal">Software AG webMethods (Architect, Design & Dev), IBM Cast Iron (all versions), MuleSoft, IBM Cast Iron, SOA, BPM, BAM, EAI.</p>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-slate-200 block mb-1">Languages, Databases & Tools</span>
+              <p class="text-slate-400 leading-normal">Java, JavaScript, C#, Python, PHP, SQL, XML/XSLT, Oracle DB, SQL Server, PL/SQL, REST/JSON, SOAP, ActiveMQ.</p>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-slate-200 block mb-1">Cloud, DevOps & Enterprise Systems</span>
+              <p class="text-slate-400 leading-normal">Salesforce (Developer, Service Cloud, Force.com, Apex/Lightning), Azure, AWS, IBM UrbanCode, SAP, PeopleSoft.</p>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-slate-200 block mb-1">Project & Change Leadership</span>
+              <p class="text-slate-400 leading-normal">Agile CI/CD, Technical Leadership, Change Management, Team Mentoring (Offshore & Onsite), Center of Excellence (CoE).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Education & Certifications -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Education</h4>
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+              <span class="font-bold text-slate-200 block">University of Texas, Austin</span>
+              <span class="text-slate-400">B.A. - 1995</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Certifications & Awards</h4>
+            <ul class="bg-slate-900/80 p-3 rounded-lg border border-slate-800 space-y-1 text-slate-300">
+              <li>• Salesforce 401 & 501 Training Completed (2014)</li>
+              <li>• webMethods Certified Enterprise Developer (2001, 2003)</li>
+              <li>• BEA WebLogic Developer (2003)</li>
+              <li>• Motorola University President's Award - Teamwork (1999)</li>
+              <li>• Motorola University President's Award - Quality (1998)</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // --- EXACT RESUME DATA FOR TUONG NGUYEN ---
+    const careerData = [
+      {
+        id: "role-metlife",
+        title: "MetLife Integration Technical Lead",
+        company: "MetLife",
+        category: "Integration Leadership",
+        startDate: "2022-12-01",
+        endDate: "2026-11-01",
+        startYear: 2022.91,
+        endYear: 2026.9,
+        location: "Enterprise Wide / Remote",
+        color: "#a855f7", // Accent Purple
+        summary: "Lead AD group for all IBM Cast Iron design & development efforts enterprise-wide utilizing Agile CI/CD frameworks.",
+        accomplishments: [
+          "Inherited 300 Integrations with less than 30 days to take complete ownership. Transitioned smoothly with no issues or delays in services.",
+          "Lead AD group for all Cast Iron design and development efforts Enterprise-wide using Agile CI/CD (IBM UrbanCode & Azure).",
+          "Mentored and led 3 offshore resources to bring the team up to speed on Cast Iron, running intensive training sessions during offshore hours.",
+          "Delivered first 3 solutions (2 bugfixes, 1 feature) in 2nd month with positive customer feedback on issues open 3+ years.",
+          "MLR Project Redesign: Redesigned monthly batch process loading 4 files into Salesforce. Eliminated manual reprocessing of 1K–3K+ monthly errors; achieved 0 errors and zero manual intervention for 3+ years.",
+          "Helped multiple business groups analyze, troubleshoot, and identify root causes for major processes involving Salesforce Opportunities, Accounts, Notice of Sales."
+        ],
+        techStack: ["IBM Cast Iron", "Salesforce", "Azure DevOps", "IBM UrbanCode", "Agile CI/CD", "REST/JSON"]
+      },
+      {
+        id: "role-quinnox",
+        title: "Sr. Integration Architect",
+        company: "Quinnox / Littelfuse",
+        category: "Enterprise Architecture",
+        startDate: "2021-09-01",
+        endDate: "2021-12-31",
+        startYear: 2021.66,
+        endYear: 2021.99,
+        location: "Enterprise / Remote",
+        color: "#0284c7", // Sky Blue
+        summary: "Led enterprise integration strategy using Software AG webMethods platform and modern cloud architectures.",
+        accomplishments: [
+          "Built and templated new integrations using webMethods Integration.io and Gateway, reducing development lifecycle from 3 months down to 1 week.",
+          "Reduced code complexity by 10x or more while improving performance, monitoring capabilities, and metrics.",
+          "Assisted, mentored, and developed training with offshore development teams for various integration projects.",
+          "Completed Proof of Concepts (PoC) to Production-ready platforms using AWS (SQS, SNS) and Azure.",
+          "Assisted in improving infrastructure, testing, and monitoring capabilities across the integration platform."
+        ],
+        techStack: ["Software AG webMethods", "Integration.io", "AWS SQS/SNS", "Azure", "API Gateway"]
+      },
+      {
+        id: "role-selfemployed",
+        title: "Sr. Software Architect (Self-Employed)",
+        company: "Independent Consulting Practice",
+        category: "Consulting",
+        startDate: "2016-12-01",
+        endDate: "2020-12-31",
+        startYear: 2016.91,
+        endYear: 2020.99,
+        location: "Los Angeles, CA",
+        color: "#059669", // Emerald Green
+        summary: "Independent consultant leading Integration, Software Architecture, and SFDC implementations for major industry clients.",
+        accomplishments: [
+          "Vantiv (2+ yrs): Lead Technical Architect for Integration Platform from legacy Systems of Record to Salesforce and Data Warehouse.",
+          "Vantiv Salesforce Deduplication: Designed, developed, and delivered a working deduplication solution in under 3 months for the world's 2nd largest credit card processor after 6 years of previous client attempts.",
+          "TIAA-CREF (9 mos): Sr. Software Architect for new SFDC implementation. Built framework scaling integration scope from 40 to 250 orchestrations on time.",
+          "CSC / Biomet (2+ yrs): Lead Integration Architect across Cast Iron, Salesforce, Oracle/ERP, and custom apps.",
+          "Network Hardware (3+ yrs): Lead Cast Iron Architect/Developer.",
+          "Reid Traditional Schools: Designed custom daily operations app and custom financial ledger system.",
+          "Built backend CRM operations and Android front-end for a limousine operations company.",
+          "Developed an actionable operational efficiency dashboard for manufacturing/supply chain ported to Salesforce Force.com & Visualforce."
+        ],
+        clients: ["Vantiv", "TIAA-CREF", "CSC / Biomet", "Network Hardware", "Reid Traditional Schools"],
+        techStack: ["IBM Cast Iron", "Salesforce SFDC", "Oracle ERP", "Siebel", "SQL Server", "Force.com", "Java", "Android"]
+      },
+      {
+        id: "role-jnj",
+        title: "Systems Architect Consultant",
+        company: "NY / NJ Consulting Practice",
+        category: "Enterprise Architecture",
+        startDate: "2009-03-01",
+        endDate: "2016-12-01",
+        startYear: 2009.16,
+        endYear: 2016.91,
+        location: "New York / New Jersey",
+        color: "#d97706", // Amber
+        summary: "Architected SOA, BPM, and Business Activity Monitoring (BAM) solutions for Fortune 50 enterprise clients.",
+        accomplishments: [
+          "Johnson & Johnson (Fortune 50): Developed BPM & BAM Strategy, Architecture, and Infrastructure supporting global business units.",
+          "Built J&J Center of Excellence (CoE) around BPM & BAM; authored Developer Best Practices & Naming Standards.",
+          "Led 6-month Global Rollout of BAM & BPM platforms on webMethods Integration Server and Optimize Platform.",
+          "Pew Charitable Trusts (3+ yrs): Cast Iron & SFDC Technical Architect integrating PeopleSoft ERP and Engaging Networks.",
+          "Executed integration engagements for Dow Jones, Bank of Tokyo, Bank of Montreal, Caxton, DeVry, Colgate-Palmolive, Allianz, Sophos/IBM, AWANA, Berlin Packaging.",
+          "100% of projects completed on or before time with 100% customer satisfaction rate."
+        ],
+        clients: ["Johnson & Johnson", "Pew Charitable Trusts", "Dow Jones", "Bank of Tokyo", "Bank of Montreal", "Colgate-Palmolive", "Allianz"],
+        techStack: ["Software AG webMethods", "IBM Cast Iron", "Salesforce", "PeopleSoft", "Oracle", "BPM / BAM", "Web Services"]
+      },
+      {
+        id: "role-motobi",
+        title: "Business Intelligence, Sr. Manager",
+        company: "Motorola Corporate",
+        category: "Integration Leadership",
+        startDate: "2005-01-01",
+        endDate: "2005-11-30",
+        startYear: 2005.00,
+        endYear: 2005.91,
+        location: "Schaumburg, IL",
+        color: "#dc2626", // Red
+        summary: "Designed and implemented global enterprise Customer Master providing a single unified customer view.",
+        accomplishments: [
+          "Built and led a new architecture team implementing Customer Master utilizing Oracle Customer Online and Cast Iron.",
+          "Aligned 5 Motorola Business Units to integrate legacy systems with the global Customer Master strategy.",
+          "Developed Integration and Services strategy for Customer Online and reported directly to Business CIOs.",
+          "Utilized Oracle Trading Community Architecture (TCA), PL/SQL, and Data Warehousing."
+        ],
+        techStack: ["Oracle Customer Online", "IBM Cast Iron", "Oracle TCA", "PL/SQL", "Data Warehousing"]
+      },
+      {
+        id: "role-motoebiz",
+        title: "Senior Technical Architect of Integration",
+        company: "Motorola eBusiness Architecture",
+        category: "Enterprise Architecture",
+        startDate: "2001-03-01",
+        endDate: "2005-01-01",
+        startYear: 2001.16,
+        endYear: 2005.00,
+        location: "Schaumburg, IL",
+        color: "#7c3aed", // Violet
+        summary: "Pioneered SOA, webMethods middleware standards, and supply chain integrations across global Motorola sectors.",
+        accomplishments: [
+          "Designed and enforced global EAI, B2B, and Web Services standards across Motorola Business Units.",
+          "Implemented credit card processing & settlement system processing over $5B/year in transactions (first SOA instance in Motorola).",
+          "Integrated PCS Call Center to Syntellect IVR for order/repair status, generating $2.4M in savings over 3 years.",
+          "Lead Architect for B2B supply chain integrations connecting external manufacturing facilities to Motorola ERP during global outsourcing initiative.",
+          "Grew and mentored global webMethods integration team from 5 to 150 team members."
+        ],
+        techStack: ["Software AG webMethods", "webMethods B2B / Enterprise", "SAP", "Informatica", "BPM / BAM", "Java", "XML"]
+      },
+      {
+        id: "role-motouniv",
+        title: "Manager – Technical Services",
+        company: "Motorola University",
+        category: "Infrastructure",
+        startDate: "1997-12-01",
+        endDate: "2001-03-01",
+        startYear: 1997.91,
+        endYear: 2001.16,
+        location: "Austin / SW Region, TX",
+        color: "#0891b2", // Cyan
+        summary: "Managed regional IT department and developed global employee training tracking infrastructure.",
+        accomplishments: [
+          "Owner and primary developer for global training system tracking programs for 250K+ Motorola employees worldwide.",
+          "Managed IT operations for MU Southwest Region (Austin, Ft. Worth, Sequin) and led technical team for construction of Parmer Lane facility.",
+          "Awarded Motorola University President's Award for Quality Improvement (1998) and Teamwork (1999)."
+        ],
+        techStack: ["UNIX Admin", "Windows NT", "DBMS", "Web Technologies", "Database Management"]
+      },
+      {
+        id: "role-vanstar",
+        title: "Help Desk Analyst & System Admin",
+        company: "Motorola / Vanstar, Inc.",
+        category: "Infrastructure",
+        startDate: "1995-03-01",
+        endDate: "1997-12-01",
+        startYear: 1995.16,
+        endYear: 1997.91,
+        location: "Austin, TX",
+        color: "#64748b", // Slate
+        summary: "Rapidly promoted from manufacturing site support analyst to System Administrator for Executive SPS Leadership.",
+        accomplishments: [
+          "Promoted to System Admin for Public Relations Team within 3 months, then assigned to SPS Austin engineering group (200+ workstations).",
+          "Selected as direct IT support lead for the SPS President and executive staff.",
+          "Offered full-time Motorola position directly from contractor engagement."
+        ],
+        techStack: ["Hardware/Software Support", "Windows NT", "System Administration"]
+      }
+    ];
+
+    const categories = ["All", "Integration Leadership", "Enterprise Architecture", "Consulting", "Infrastructure"];
+
+    // App State
+    let activeCategory = "All";
+    let searchQuery = "";
+    let activeDateRange = [new Date("1995-01-01"), new Date("2026-12-31")];
+
+    // --- D3 SCRUBBER COMPONENT ---
+    class TimelineScrubber {
+      constructor(containerId, svgId) {
+        this.container = d3.select(containerId);
+        this.svg = d3.select(svgId);
+        this.margin = { top: 16, right: 28, bottom: 22, left: 28 };
+        this.minDate = new Date("1995-01-01");
+        this.maxDate = new Date("2026-12-31");
+
+        this.init();
+        window.addEventListener("resize", () => this.resize());
+      }
+
+      init() {
+        this.svg.html("");
+        this.gAxis = this.svg.append("g").attr("class", "axis");
+        this.gBars = this.svg.append("g").attr("class", "bars");
+        this.gMarkers = this.svg.append("g").attr("class", "markers");
+        this.gBrush = this.svg.append("g").attr("class", "brush");
+
+        this.xScale = d3.scaleTime().domain([this.minDate, this.maxDate]);
+
+        this.brush = d3.brushX()
+          .on("brush end", (event) => this.onBrushed(event));
+
+        this.resize();
+      }
+
+      resize() {
+        const bounds = this.container.node().getBoundingClientRect();
+        this.width = bounds.width;
+        this.height = bounds.height;
+
+        this.svg.attr("width", this.width).attr("height", this.height);
+        this.xScale.range([this.margin.left, this.width - this.margin.right]);
+
+        this.brush.extent([
+          [this.margin.left, 2],
+          [this.width - this.margin.right, this.height - 20]
+        ]);
+
+        this.gBrush.call(this.brush);
+        this.update();
+      }
+
+      update() {
+        const parseTime = d3.timeParse("%Y-%m-%d");
+
+        // 1. Decadal Axis
+        const xAxis = d3.axisBottom(this.xScale)
+          .ticks(d3.timeYear.every(5))
+          .tickFormat(d3.timeFormat("%Y"))
+          .tickSize(4);
+
+        this.gAxis
+          .attr("transform", `translate(0, ${this.height - 20})`)
+          .call(xAxis)
+          .call(g => g.select(".domain").attr("stroke", "#374151"))
+          .call(g => g.selectAll("text").attr("fill", "#9ca3af").attr("font-size", "10px"));
+
+        // 2. Render Role Spans
+        const visibleRoles = careerData.filter(d => activeCategory === "All" || d.category === activeCategory);
+        
+        const bars = this.gBars.selectAll(".role-span").data(visibleRoles, d => d.id);
+        bars.exit().remove();
+
+        const barsEnter = bars.enter().append("rect").attr("class", "role-span");
+
+        barsEnter.merge(bars)
+          .attr("x", d => this.xScale(parseTime(d.startDate)))
+          .attr("y", (d, i) => 10 + (i % 3) * 11)
+          .attr("width", d => Math.max(10, this.xScale(parseTime(d.endDate)) - this.xScale(parseTime(d.startDate))))
+          .attr("height", 6)
+          .attr("rx", 3)
+          .attr("fill", d => d.color)
+          .attr("opacity", 0.45);
+
+        // 3. Render Marker Dots
+        const markers = this.gMarkers.selectAll(".marker-group").data(visibleRoles, d => d.id);
+        markers.exit().remove();
+
+        const markersEnter = markers.enter().append("g").attr("class", "marker-group cursor-pointer");
+
+        markersEnter.append("circle")
+          .attr("r", 5)
+          .attr("stroke", "#090d16")
+          .attr("stroke-width", 1.5);
+
+        markersEnter.merge(markers)
+          .attr("transform", d => {
+            const x = this.xScale(parseTime(d.startDate));
+            const y = 13 + (visibleRoles.indexOf(d) % 3) * 11;
+            return `translate(${x}, ${y})`;
+          })
+          .select("circle")
+          .attr("fill", d => d.color);
+
+        // Click marker to set range around role
+        markersEnter.on("click", (event, d) => {
+          const s = parseTime(d.startDate);
+          const e = parseTime(d.endDate);
+          const pad = (e - s) * 0.25 || 1000 * 60 * 60 * 24 * 180;
+          const newSelection = [
+            Math.max(this.margin.left, this.xScale(new Date(s.getTime() - pad))),
+            Math.min(this.width - this.margin.right, this.xScale(new Date(e.getTime() + pad)))
+          ];
+          this.gBrush.call(this.brush.move, newSelection);
+        });
+      }
+
+      onBrushed(event) {
+        if (!event.selection) {
+          activeDateRange = [this.minDate, this.maxDate];
+        } else {
+          const [x0, x1] = event.selection;
+          activeDateRange = [this.xScale.invert(x0), this.xScale.invert(x1)];
+        }
+
+        const startY = activeDateRange[0].getFullYear();
+        const endY = activeDateRange[1].getFullYear();
+        d3.select("#activeRangeLabel").text(`${startY} – ${endY}`);
+
+        renderFocusedCards();
+      }
+
+      setRangeYears(startYear, endYear) {
+        const x0 = this.xScale(new Date(`${startYear}-01-01`));
+        const x1 = this.xScale(new Date(`${endYear}-12-31`));
+        this.gBrush.call(this.brush.move, [x0, x1]);
+      }
+    }
+
+    // --- CARDS RENDERER ---
+    function renderFocusedCards() {
+      const container = d3.select("#focusedCardsContainer");
+      const emptyState = d3.select("#emptyState");
+      const parseTime = d3.timeParse("%Y-%m-%d");
+
+      const [winStart, winEnd] = activeDateRange;
+
+      const filtered = careerData.filter(d => {
+        const s = parseTime(d.startDate);
+        const e = parseTime(d.endDate);
+
+        const overlaps = s <= winEnd && e >= winStart;
+        const categoryMatches = activeCategory === "All" || d.category === activeCategory;
+        
+        const q = searchQuery.toLowerCase();
+        const searchMatches = !q || 
+          d.title.toLowerCase().includes(q) ||
+          d.company.toLowerCase().includes(q) ||
+          d.summary.toLowerCase().includes(q) ||
+          d.accomplishments.some(a => a.toLowerCase().includes(q)) ||
+          d.techStack.some(t => t.toLowerCase().includes(q)) ||
+          (d.clients && d.clients.some(c => c.toLowerCase().includes(q)));
+
+        return overlaps && categoryMatches && searchMatches;
+      });
+
+      d3.select("#activeRoleCount").text(filtered.length);
+      d3.select("#totalRoleCount").text(careerData.length);
+
+      if (filtered.length === 0) {
+        container.html("");
+        emptyState.classed("hidden", false);
+        return;
+      }
+
+      emptyState.classed("hidden", true);
+
+      // Sort recency descending
+      filtered.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+
+      const cards = container.selectAll(".role-card").data(filtered, d => d.id);
+      cards.exit().remove();
+
+      const enter = cards.enter()
+        .append("div")
+        .attr("class", "role-card bg-panelbg border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition flex flex-col justify-between space-y-4 shadow-xl cursor-pointer group");
+
+      enter.html(d => `
+        <div class="space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="inline-block text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-900 border mb-1.5" style="color: ${d.color}; border-color: ${d.color}40">
+                ${d.category}
+              </span>
+              <h3 class="text-base font-bold text-white group-hover:text-cyan-400 transition leading-snug">${d.title}</h3>
+              <p class="text-xs font-semibold text-cyan-400 mt-0.5">${d.company}</p>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed font-normal">${d.summary}</p>
+
+          <!-- Highlights Snippet -->
+          <ul class="text-[11px] text-slate-400 space-y-1 list-disc list-inside">
+            ${d.accomplishments.slice(0, 2).map(a => `<li class="line-clamp-2">${a}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="space-y-3 pt-3 border-t border-slate-800">
+          <div class="flex flex-wrap gap-1">
+            ${d.techStack.slice(0, 5).map(t => `<span class="px-2 py-0.5 bg-slate-900 rounded text-[10px] font-mono text-slate-400 border border-slate-800">${t}</span>`).join('')}
+            ${d.techStack.length > 5 ? `<span class="px-1.5 py-0.5 bg-slate-900 rounded text-[10px] font-mono text-slate-500">+${d.techStack.length - 5}</span>` : ''}
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <span class="font-mono text-[11px] text-slate-400">${d.startDate.slice(0,7)} – ${d.endDate.slice(0,7)}</span>
+            <button class="inspect-btn text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 text-xs">
+              Full Details <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `);
+
+      container.selectAll(".role-card").each(function(d) {
+        d3.select(this).on("click", () => openDrawer(d));
+      });
+
+      lucide.createIcons();
+    }
+
+    // --- SETUP CATEGORY TOGGLES ---
+    function initCategoryToggles() {
+      const container = d3.select("#categoryToggles").html("");
+
+      categories.forEach(cat => {
+        const btn = container.append("button")
+          .attr("class", `px-3 py-1 rounded-lg text-xs font-medium border transition whitespace-nowrap ${cat === activeCategory ? 'bg-cyan-600 text-white border-cyan-500' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'}`)
+          .text(cat);
+
+        btn.on("click", () => {
+          activeCategory = cat;
+          initCategoryToggles();
+          scrubberInstance.update();
+          renderFocusedCards();
+        });
+      });
+    }
+
+    // --- DRAWER ACTIONS ---
+    function openDrawer(data) {
+      d3.select("#drawerCategory").text(data.category).style("color", data.color).style("border-color", `${data.color}40`);
+      d3.select("#drawerTitle").text(data.title);
+      d3.select("#drawerCompany").text(data.company);
+      d3.select("#drawerDates").text(`${data.startDate} to ${data.endDate}`);
+      d3.select("#drawerLocation").text(data.location);
+
+      const accList = d3.select("#drawerAccomplishments").html("");
+      data.accomplishments.forEach(a => {
+        accList.append("li").attr("class", "flex items-start gap-2")
+          .html(`<span class="text-cyan-400 shrink-0 mt-0.5">•</span><span>${a}</span>`);
+      });
+
+      // Clients
+      const clientsSection = d3.select("#drawerClientsSection");
+      if (data.clients && data.clients.length > 0) {
+        clientsSection.classed("hidden", false);
+        const clientBox = d3.select("#drawerClients").html("");
+        data.clients.forEach(c => {
+          clientBox.append("span")
+            .attr("class", "px-2 py-1 bg-amber-950/60 border border-amber-800/60 text-amber-300 rounded text-xs font-medium")
+            .text(c);
+        });
+      } else {
+        clientsSection.classed("hidden", true);
+      }
+
+      // Tech Stack
+      const techBox = d3.select("#drawerTechStack").html("");
+      data.techStack.forEach(t => {
+        techBox.append("span")
+          .attr("class", "px-2.5 py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-800 font-mono text-[11px]")
+          .text(t);
+      });
+
+      d3.select("#detailDrawer").classed("translate-x-full", false);
+      d3.select("#drawerOverlay").classed("hidden", false);
+    }
+
+    function closeDrawer() {
+      d3.select("#detailDrawer").classed("translate-x-full", true);
+      d3.select("#drawerOverlay").classed("hidden", true);
+    }
+
+    let scrubberInstance;
+
+    window.onload = function() {
+      lucide.createIcons();
+      scrubberInstance = new TimelineScrubber("#scrubberContainer", "#scrubberSvg");
+
+      initCategoryToggles();
+      renderFocusedCards();
+
+      // Search Listener
+      d3.select("#searchInput").on("input", function() {
+        searchQuery = this.value;
+        renderFocusedCards();
+      });
+
+      // Preset Range Buttons
+      d3.selectAll(".preset-btn").on("click", function() {
+        const start = d3.select(this).attr("data-start");
+        const end = d3.select(this).attr("data-end");
+        scrubberInstance.setRangeYears(start, end);
+      });
+
+      // Clear Filters
+      d3.select("#clearFiltersBtn").on("click", () => {
+        searchQuery = "";
+        d3.select("#searchInput").property("value", "");
+        activeCategory = "All";
+        initCategoryToggles();
+        scrubberInstance.setRangeYears(1995, 2026);
+      });
+
+      // Drawer Listeners
+      d3.select("#closeDrawer").on("click", closeDrawer);
+      d3.select("#drawerOverlay").on("click", closeDrawer);
+
+      // Bio Modal Listeners
+      d3.select("#toggleSummaryModal").on("click", () => d3.select("#summaryModal").classed("hidden", false));
+      d3.select("#closeSummaryModal").on("click", () => d3.select("#summaryModal").classed("hidden", true));
+      d3.select("#summaryModal").on("click", function(e) {
+        if (e.target === this) d3.select("#summaryModal").classed("hidden", true);
+      });
+    };
+  </script>
+</body>
+</html>
